@@ -33,7 +33,7 @@ function main()
 
   		finished = _.after(files.length, report);
   		for(var file in files) {
-  			complexity(filePath);
+  			//complexity(filePath);
   		}
   		
 	});
