@@ -2,12 +2,11 @@ var esprima = require("esprima");
 var options = {tokens:true, tolerant: true, loc: true, range: true };
 var fs = require("fs");
 var recursive = require('recursive-readdir');
-var NumberOfLinesThreshold = 50;
+var NumberOfLinesThreshold = 100;
 var BigOhThreshold = 3;
 var MaxConditionsThreshold = 8;
 var totalViolations = 0;
 var _ = require("underscore");
-var finished;
 
 function main()
 {
@@ -15,12 +14,13 @@ function main()
 
 	if( args.length == 0 )
 	{
-		args = ["/var/lib/jenkins/workspace/checkbox.io/server-side/"];
+		//args = ["/var/lib/jenkins/workspace/checkbox.io/server-side/"];
+		args = ["analysis.js"];
 	}
 	//complexity("/Users/PranavKulkarni/Documents/DevOps/checkbox.io/server-side/site/routes/study.js")
 	var dirPath = args[0];
-	
-	recursive(dirPath, ['*.jade', '*.json', '*.html'], function (err, allFiles) {
+	complexity(args[0]);
+	/*recursive(dirPath, ['*.jade', '*.json', '*.html'], function (err, allFiles) {
 
 		var files = [];
 
@@ -37,7 +37,7 @@ function main()
   		}
   		
 	});
-
+*/
 	report();
 }
 
@@ -64,9 +64,7 @@ var builders = {};
 function FunctionBuilder()
 {
 	this.StartLine = 0;
-
 	this.FunctionName = "";
-	
 	this.MaxConditions = 0;
 	// Long method detection in terms of lines
 	this.NumberOfLines = 0;
@@ -93,11 +91,6 @@ function FunctionBuilder()
 function FileBuilder()
 {
 	this.FileName = "";
-	// Number of strings in a file.
-	this.Strings = 0;
-	// Number of imports in a file.
-	this.ImportCount = 0;
-
 	this.report = function()
 	{
 		console.log (
@@ -125,6 +118,28 @@ function traverseWithParents(object, visitor)
     }
 }
 
+
+function traverseWithParents(object, visitor, level)
+{
+    var key, child;
+
+    visitor.call(null, object);
+
+    for (key in object) {
+        if (object.hasOwnProperty(key)) {
+            child = object[key];
+            if (typeof child === 'object' && child !== null && key != 'parent') 
+            {
+            	child.parent = object;
+            	child.level = level;
+				traverseWithParents(child, visitor, level+1);
+            }
+        }
+    }
+}
+
+
+
 function complexity(filePath)
 {	
 	var buf = fs.readFileSync(filePath, "utf8");
@@ -134,36 +149,20 @@ function complexity(filePath)
 	// A file level-builder:
 	var fileBuilder = new FileBuilder();
 	fileBuilder.FileName = filePath;
-	fileBuilder.ImportCount = 0;
 	builders[filePath] = fileBuilder;
 
 	// Traverse program with a function visitor.
 	traverseWithParents(ast, function (node) 
 	{	
-		// PackageComplexity:
-		// require can be anywhere in the code, not necessarily a variable declaration
-		if (node.type === "CallExpression")
-		{
-			if (node.callee.name === "require")
-			{
-				fileBuilder.ImportCount += 1; 
-			}
-		}
-		//TODO : handle exports.createStudy
 		if (node.type === 'FunctionDeclaration' || node.type === "FunctionExpression") 
 		{	
 			var builder = new FunctionBuilder();
 			builder.FunctionName = functionName(node); 
-			var maxConditions = 0;
-			//builder.FunctionName = functionName(node); 
 			builder.StartLine    = node.loc.start.line;
 			builder.NumberOfLines   = node.loc.end.line - node.loc.start.line;
 
-			//TODO: Big Oh calculation
-
 			// MaxConditions: Here number of conditions in an if statement is the number of && and || + 1. You don't have to 
 			// worry about !(not operation)
-			builder.MaxConditions = 0; // for each function
 			traverseWithParents(node, function(child) {
 				if(child.type === "IfStatement") {
 					var conditionCount = 1; // default
@@ -178,11 +177,20 @@ function complexity(filePath)
 				}
 			});
 
+			// BigOh calculation
+			var levels = [];
+			traverseWithParents(node, function(child) {
+				if(isLoop(child)) {
+					levels.push(child.level);
+				};
+			}, 1);
+			builder.BigOh = findSequenceLength(levels, findIndex(levels));
+
 			if(isViolation(builder)) {
-				builders[builder.FunctionName] = builder;	
+				builders[builder.FunctionName] = builder;
 			}
 		}
-		finished();
+		
 	});
 }
 
@@ -194,7 +202,6 @@ function isViolation(functionBuilder) {
 	}
 	return false;
 }
-
 
 // Helper function for counting children of node.
 function childrenLength(node)
@@ -246,6 +253,39 @@ function functionName( node )
 	} 
 	return "anon function @" + node.loc.start.line;
 }
+
+/******************************** LONGEST INCREASING SUBSEQUENCE  ********************************/
+
+function findIndex(input){
+	var len = input.length;
+	var maxSeqEndingHere = _.range(len).map(function(){return 1;});
+	for(var i=0; i<len; i++)
+		for(var j=i-1;j>=0;j--)
+			if(input[i] > input[j] && maxSeqEndingHere[j] >= maxSeqEndingHere[i])
+				maxSeqEndingHere[i] = maxSeqEndingHere[j]+1;
+	return maxSeqEndingHere;
+}
+ 
+function findSequenceLength(input, result){
+	if(input.length === 0) {
+		return 0;
+	}
+	var maxValue = Math.max.apply(null, result);
+	var maxIndex = result.indexOf(Math.max.apply(Math, result));
+	var output = [];
+	output.push(input[maxIndex]);
+	for(var i = maxIndex ; i >= 0; i--){
+		if(maxValue==0)break;
+		if(input[maxIndex] > input[i]  && result[i] == maxValue-1){
+			output.push(input[i]);
+			maxValue--;
+		}
+	}
+	output.reverse();
+	return output.length;
+}
+
+/******************************** LONGEST INCREASING SUBSEQUENCE  ********************************/
 
 // Helper function for allowing parameterized formatting of strings.
 if (!String.prototype.format) {
