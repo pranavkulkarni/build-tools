@@ -2,18 +2,42 @@ var fs = require('fs');
 var xml2js = require('xml2js');
 var parser = new xml2js.Parser();
 var recursive = require('recursive-readdir');
+var mkdirp = require('mkdirp');
 
-//var testReport =  '/Users/PranavKulkarni/Documents/DevOps/iTrust-v23/iTrust/target/surefire-reports/TEST-edu.ncsu.csc.itrust.unit.dao.fakeemail.EmailTest.xml';
-var dirPath = '/Users/PranavKulkarni/Documents/DevOps/iTrust-v23/iTrust/target/surefire-reports/';
+var args = process.argv.slice(2);
 
-//var nextBuildNumberFile = '/var/lib/jenkins/jobs/iTrust-v23-secondary/nextBuildNumber'
-//var buildDir = '/var/lib/jenkins/build-tools/reports/builds/';
-var nextBuildNumberFile = '/Users/PranavKulkarni/Documents/DevOps/iTrust-v23/iTrust/target/nextBuildNumber';
+if( args.length == 0 )
+{
+        //args = ["/var/lib/jenkins/workspace/iTrust-v23-secondary/iTrust/target/surefire-reports"];
+        args = ["/Users/vivekanr/workspace/iTrust-v23/iTrust/target/surefire-reports/"];
+}
+   
+var projectPath = args[0];
+var reportsPath = "./reports/builds/"
 
-var nextBuildNumber = fs.readFileSync(nextBuildNumberFile,"utf8").toString().trim();
-//console.log(nextBuildNumber);
+var dirs = projectPath.split("/");
+var jobName;
+for(var i = 0 ; i < dirs.length; i++)
+{
+    if(dirs[i] === 'workspace'){
+        jobName = dirs[i+1];
+        break;
+    }
+}
 
-var buildDir = dirPath+"reports/builds/"+nextBuildNumber+"/";
+//var nextBuildNumberFile = '/var/lib/jenkins/jobs/' + jobName + '/nextBuildNumber';
+var nextBuildNumberFile = '/Users/vivekanr/workspace/' + jobName + '/iTrust/target/nextBuildNumber';
+console.log(nextBuildNumberFile);
+
+var nextBuildNumber = fs.readFileSync(nextBuildNumberFile, "utf8").toString().trim();
+var buildDir = reportsPath + nextBuildNumber + "/";
+
+
+// Create reports/builds directory    
+mkdirp.sync(reportsPath, function (err) {
+    if (err) console.error(err);
+    else console.log('Could not create reports path!');
+});
 
 // Create Directory for each Build
 if (!fs.existsSync(buildDir)){
@@ -21,7 +45,7 @@ if (!fs.existsSync(buildDir)){
 }
 
 // Parse sure-fire .xml Files 
-recursive(dirPath, ['*.txt'], function (err, allFiles) {
+recursive(projectPath, ['*.txt'], function (err, allFiles) {
 
     var files = [];
 
@@ -82,7 +106,6 @@ recursive(dirPath, ['*.txt'], function (err, allFiles) {
         }
     }
 });
-
 
 
 
