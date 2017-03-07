@@ -6,7 +6,6 @@ var NumberOfLinesThreshold = 100;
 var BigOhThreshold = 3;
 var MaxConditionsThreshold = 8;
 var totalViolations = 0;
-var _ = require("underscore");
 
 function main()
 {
@@ -15,6 +14,7 @@ function main()
 	if( args.length == 0 )
 	{
 		//args = ["/var/lib/jenkins/workspace/checkbox.io/server-side/"];
+		//args = ["/Users/PranavKulkarni/Documents/DevOps/checkbox.io/server-side/site/routes/study.js"];
 		args = ["analysis.js"];
 	}
 	//complexity("/Users/PranavKulkarni/Documents/DevOps/checkbox.io/server-side/site/routes/study.js")
@@ -144,7 +144,6 @@ function complexity(filePath)
 {	
 	var buf = fs.readFileSync(filePath, "utf8");
 	var ast = esprima.parse(buf, options);
-	var i = 0;
 
 	// A file level-builder:
 	var fileBuilder = new FileBuilder();
@@ -184,7 +183,7 @@ function complexity(filePath)
 					levels.push(child.level);
 				};
 			}, 1);
-			builder.BigOh = findSequenceLength(levels, findIndex(levels));
+			builder.BigOh = longestIncreasingSubsequence(levels);
 
 			if(isViolation(builder)) {
 				builders[builder.FunctionName] = builder;
@@ -256,33 +255,31 @@ function functionName( node )
 
 /******************************** LONGEST INCREASING SUBSEQUENCE  ********************************/
 
-function findIndex(input){
-	var len = input.length;
-	var maxSeqEndingHere = _.range(len).map(function(){return 1;});
-	for(var i=0; i<len; i++)
-		for(var j=i-1;j>=0;j--)
-			if(input[i] > input[j] && maxSeqEndingHere[j] >= maxSeqEndingHere[i])
-				maxSeqEndingHere[i] = maxSeqEndingHere[j]+1;
-	return maxSeqEndingHere;
-}
- 
-function findSequenceLength(input, result){
-	if(input.length === 0) {
-		return 0;
-	}
-	var maxValue = Math.max.apply(null, result);
-	var maxIndex = result.indexOf(Math.max.apply(Math, result));
-	var output = [];
-	output.push(input[maxIndex]);
-	for(var i = maxIndex ; i >= 0; i--){
-		if(maxValue==0)break;
-		if(input[maxIndex] > input[i]  && result[i] == maxValue-1){
-			output.push(input[i]);
-			maxValue--;
-		}
-	}
-	output.reverse();
-	return output.length;
+function longestIncreasingSubsequence(arr) {
+    if(arr.length === 0) {
+        return 0;
+    }
+    if(arr.length === 1) {
+        return 1;
+    }
+    var longestSoFar = 0;
+    for(var i = 1; i < arr.length; i++) {
+        var count = 1;
+        for(var j = i; j < arr.length; j++) {
+            if(arr[j] > arr[j-1]) {
+                count++;
+            } else {
+                if(count > longestSoFar) {
+                    longestSoFar = count;
+                }
+                break;
+            }
+        }
+        if(count > longestSoFar) {
+            longestSoFar = count;
+        }
+    }
+    return longestSoFar;
 }
 
 /******************************** LONGEST INCREASING SUBSEQUENCE  ********************************/
@@ -301,4 +298,3 @@ if (!String.prototype.format) {
 }
 
 main();
- 
