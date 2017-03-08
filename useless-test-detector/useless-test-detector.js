@@ -81,7 +81,7 @@ function collectStats(testReport) {
 
 }
 console.log('\nBuild-Tools | Useless Test Detector : STARTED');
-console.log("Identifying Flaky Tests in Test Suite using Build-Tools | Useless Test Detector\n");
+console.log("Identifying Flaky Tests in Test Suite\n");
 var calls = [];
 recursive(reportsPath, function (err, allFiles) {
 	for(var id in allFiles) {

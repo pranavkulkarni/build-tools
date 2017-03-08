@@ -1,11 +1,53 @@
 var esprima = require("esprima");
 var options = {tokens:true, tolerant: true, loc: true, range: true };
 var fs = require("fs");
+var path = require("path");
 var recursive = require('recursive-readdir');
 var NumberOfLinesThreshold = 100;
 var BigOhThreshold = 3;
 var MaxConditionsThreshold = 8;
-var totalViolations = 0;
+var calls = [];
+
+//Ignore node_modules folder
+function ignoreFunc(file,stats){
+	return stats.isDirectory() && path.basename(file) == "node_modules";
+}
+
+
+function popStack(){
+	calls.pop();
+	//console.log("CALLS =====>" + calls.length);
+	if(calls.length === 0) {
+		functionStats();
+	}
+}
+
+function functionStats() {
+
+	console.log('------------------------------------------------------------------------------\n');
+	console.log('                        Static Code Analyzer Report                           \n');
+	console.log('------------------------------------------------------------------------------\n');
+	// Report
+	for( var node in builders )
+	{
+		var builder = builders[node];
+		//console.log(builder);
+		builder.report();
+	}
+
+	var size = Object.keys(builders).length;
+
+	if(size === 0) {
+		console.log("No code violations found!");
+	}
+
+	console.log('\nBuild-Tools | Static Code Analyzer : COMPLETED\n');
+
+}
+
+function processFile(filePath, callback) {
+	callback(filePath, popStack);
+}
 
 function main()
 {
@@ -14,49 +56,29 @@ function main()
 	if( args.length == 0 )
 	{
 		//args = ["/var/lib/jenkins/workspace/checkbox.io/server-side/"];
-		//args = ["/Users/PranavKulkarni/Documents/DevOps/checkbox.io/server-side/site/routes/study.js"];
-		args = ["analysis.js"];
+		args = ["/Users/PranavKulkarni/Documents/DevOps/checkbox.io/server-side/"];
+		//args = ["analysis.js"];
 	}
-	//complexity("/Users/PranavKulkarni/Documents/DevOps/checkbox.io/server-side/site/routes/study.js")
-	var dirPath = args[0];
-	complexity(args[0]);
-	/*recursive(dirPath, ['*.jade', '*.json', '*.html'], function (err, allFiles) {
 
-		var files = [];
+	console.log('\nBuild-Tools | Static Code Analyzer : STARTED');
+	console.log(("Detecting Functions that violate Max Conditions (Threshold: {0}), Long Methods (Threshold: {1}), and Big-Oh (Threshold: {2})\n").format(MaxConditionsThreshold, NumberOfLinesThreshold, BigOhThreshold));
+	
+	var dirPath = args[0];
+	recursive(dirPath, ['*.jade', '*.json', '*.html', ignoreFunc], function (err, allFiles) {
 
 		for(var id in allFiles) {
   			if(allFiles[id].endsWith('.js')) {
   				var filePath = allFiles[id];
-  				files.push(filePath);
-  			}
-  		}
+  				//console.log(filePath);
+  				calls.push(1);
+				processFile(filePath, complexity);
 
-  		finished = _.after(files.length, report);
-  		for(var file in files) {
-  			//complexity(filePath);
+  			}
   		}
   		
 	});
-*/
-	report();
+
 }
-
-function report() {
-	// Report
-	for( var node in builders )
-	{
-		var builder = builders[node];
-		builder.report();
-	}
-
-	if(totalViolations > 0) {
-		console.log("Total function violations = " + totalViolations);
-	} else {
-		console.log("No code violations found.");
-	}
-}
-
-
 
 var builders = {};
 
@@ -116,6 +138,7 @@ function traverseWithParents(object, visitor)
             }
         }
     }
+
 }
 
 
@@ -139,64 +162,68 @@ function traverseWithParents(object, visitor, level)
 }
 
 
-
-function complexity(filePath)
+function complexity(filePath, callback)
 {	
-	var buf = fs.readFileSync(filePath, "utf8");
-	var ast = esprima.parse(buf, options);
+	var buf = fs.readFile(filePath, function(err, buf) {
+		var ast = esprima.parse(buf, options);
 
-	// A file level-builder:
-	var fileBuilder = new FileBuilder();
-	fileBuilder.FileName = filePath;
-	builders[filePath] = fileBuilder;
+		// A file level-builder:
+		var fileBuilder = new FileBuilder();
+		fileBuilder.FileName = filePath;
+		//builders[filePath] = fileBuilder;
 
-	// Traverse program with a function visitor.
-	traverseWithParents(ast, function (node) 
-	{	
-		if (node.type === 'FunctionDeclaration' || node.type === "FunctionExpression") 
+		// Traverse program with a function visitor.
+		traverseWithParents(ast, function (node) 
 		{	
-			var builder = new FunctionBuilder();
-			builder.FunctionName = functionName(node); 
-			builder.StartLine    = node.loc.start.line;
-			builder.NumberOfLines   = node.loc.end.line - node.loc.start.line;
+			if (node.type === 'FunctionDeclaration' || node.type === "FunctionExpression") 
+			{	
+				var builder = new FunctionBuilder();
+				builder.FunctionName = functionName(node); 
+				builder.StartLine    = node.loc.start.line;
+				builder.NumberOfLines   = node.loc.end.line - node.loc.start.line;
 
-			// MaxConditions: Here number of conditions in an if statement is the number of && and || + 1. You don't have to 
-			// worry about !(not operation)
-			traverseWithParents(node, function(child) {
-				if(child.type === "IfStatement") {
-					var conditionCount = 1; // default
-					traverseWithParents(child.test, function(grandchild) {
-						if(grandchild.type === "LogicalExpression") {
-							conditionCount += 1;
+				// MaxConditions: Here number of conditions in an if statement is the number of && and || + 1. You don't have to 
+				// worry about !(not operation)
+				traverseWithParents(node, function(child) {
+					if(child.type === "IfStatement") {
+						var conditionCount = 1; // default
+						traverseWithParents(child.test, function(grandchild) {
+							if(grandchild.type === "LogicalExpression") {
+								conditionCount += 1;
+							}
+						});
+						if(builder.MaxConditions < conditionCount) {
+							builder.MaxConditions = conditionCount;
 						}
-					});
-					if(builder.MaxConditions < conditionCount) {
-						builder.MaxConditions = conditionCount;
 					}
+				});
+
+				// BigOh calculation
+				var levels = [];
+				traverseWithParents(node, function(child) {
+					if(isLoop(child)) {
+						levels.push(child.level);
+					};
+				}, 1);
+				builder.BigOh = longestIncreasingSubsequence(levels);
+
+				if(isViolation(builder)) {
+					builders[filePath] = fileBuilder;
+					builders[builder.FunctionName] = builder;
 				}
-			});
-
-			// BigOh calculation
-			var levels = [];
-			traverseWithParents(node, function(child) {
-				if(isLoop(child)) {
-					levels.push(child.level);
-				};
-			}, 1);
-			builder.BigOh = longestIncreasingSubsequence(levels);
-
-			if(isViolation(builder)) {
-				builders[builder.FunctionName] = builder;
 			}
-		}
+		});
+
+		callback();
 		
 	});
+	
+
 }
 
 function isViolation(functionBuilder) {
 	if(functionBuilder.NumberOfLines > NumberOfLinesThreshold || functionBuilder.MaxConditions > MaxConditionsThreshold
 		|| functionBuilder.BigOh > BigOhThreshold) {
-		totalViolations++;
 		return true;
 	}
 	return false;
