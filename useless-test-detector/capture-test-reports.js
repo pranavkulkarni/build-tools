@@ -25,18 +25,21 @@ for(var i = 0 ; i < dirs.length; i++)
     }
 }
 
+console.log('\nBuild-Tools | Useless Test Detector : STARTED');
+
 //var nextBuildNumberFile = '/var/lib/jenkins/jobs/' + jobName + '/nextBuildNumber';
 var nextBuildNumberFile = '/Users/vivekanr/workspace/' + jobName + '/iTrust/target/nextBuildNumber';
-console.log(nextBuildNumberFile);
+//console.log(nextBuildNumberFile);
 
 var nextBuildNumber = fs.readFileSync(nextBuildNumberFile, "utf8").toString().trim();
-var buildDir = reportsPath + nextBuildNumber + "/";
 
+console.log("Fetching SureFire Test Reports for Job: " + jobName + " Build No: " + nextBuildNumber + " using Build-Tools | Useless Test Detector\n");
+var buildDir = reportsPath + nextBuildNumber + "/";
 
 // Create reports/builds directory    
 mkdirp.sync(reportsPath, function (err) {
     if (err) console.error(err);
-    else console.log('Could not create reports path!');
+    else console.log('Could not create Reports directory!');
 });
 
 // Create Directory for each Build
@@ -52,7 +55,7 @@ recursive(projectPath, ['*.txt'], function (err, allFiles) {
     for(var id in allFiles) {
         if(allFiles[id].endsWith('.xml')) {
             var testReport = allFiles[id];
-            console.log(testReport);
+            //console.log(testReport);
 
             fs.readFile(testReport, function(err, data) {
                 parser.parseString(data, function (err, result) {
@@ -68,11 +71,11 @@ recursive(projectPath, ['*.txt'], function (err, allFiles) {
                         }
                     }
 
-                    console.log("-------------------- " + allTestCases[0].$.classname + " -------------------- ");
+                    //console.log("-------------------- " + allTestCases[0].$.classname + " -------------------- ");
                     
-                    console.log("#################### FAILED TESTS #########################\n");
+                    //console.log("#################### FAILED TESTS #########################\n");
                     for (var i = 0; i < failedTests.length; i++) {
-                        console.log(failedTests[i].$.classname + ", " + failedTests[i].$.name + " Failed: TRUE" );
+                        //console.log(failedTests[i].$.classname + ", " + failedTests[i].$.name + " Failed: TRUE" );
 
                         var failedFileName = buildDir + 'failed.txt';
                         var text = failedTests[i].$.classname + ", " + failedTests[i].$.name + "\n";
@@ -85,9 +88,9 @@ recursive(projectPath, ['*.txt'], function (err, allFiles) {
 
                     }
 
-                    console.log("#################### SUCCESSFUL TESTS #########################\n");
+                    //console.log("#################### SUCCESSFUL TESTS #########################\n");
                     for (var i = 0; i < successfulTests.length; i++) {
-                        console.log(successfulTests[i].$.classname + ", " + successfulTests[i].$.name + " Failed: FALSE" );
+                        //console.log(successfulTests[i].$.classname + ", " + successfulTests[i].$.name + " Failed: FALSE" );
 
 
                         var successFileName = buildDir + 'success.txt';
@@ -107,5 +110,6 @@ recursive(projectPath, ['*.txt'], function (err, allFiles) {
     }
 });
 
+console.log('\nBuild-Tools | Useless Test Detector : COMPLETED');
 
 
