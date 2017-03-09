@@ -1,6 +1,5 @@
-var fs = require('fs');
+var fs = require('graceful-fs');
 var recursive = require('recursive-readdir');
-var async = require('async');
 var reportsPath = "./reports/builds";
 var testStats = {};
 
@@ -86,7 +85,7 @@ var calls = [];
 recursive(reportsPath, function (err, allFiles) {
 	for(var id in allFiles) {
 		var file = allFiles[id];
-		if(file.endsWith('.txt')) {
+		if(file.indexOf('.txt') > -1) {
     		//console.log('--------' + file + '-------------');
     		calls.push(1);
 			processFile(file, collectStats);

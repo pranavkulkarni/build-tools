@@ -1,4 +1,4 @@
-var fs = require('fs');
+var fs = require('graceful-fs');
 var xml2js = require('xml2js');
 var parser = new xml2js.Parser();
 var recursive = require('recursive-readdir');
@@ -128,7 +128,7 @@ recursive(projectPath, ['*.txt'], function (err, allFiles) {
     var files = [];
 
     for(var id in allFiles) {
-        if(allFiles[id].endsWith('.xml')) {
+        if(allFiles[id].indexOf('.xml') > -1) {
             var testReport = allFiles[id];
             //console.log(testReport);
 
