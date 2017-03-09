@@ -16,7 +16,6 @@ function ignoreFunc(file,stats){
 
 function popStack(){
 	calls.pop();
-	//console.log("CALLS =====>" + calls.length);
 	if(calls.length === 0) {
 		functionStats();
 	}
@@ -31,7 +30,6 @@ function functionStats() {
 	for( var node in builders )
 	{
 		var builder = builders[node];
-		//console.log(builder);
 		builder.report();
 	}
 
@@ -55,8 +53,8 @@ function main()
 
 	if( args.length == 0 )
 	{
-		//args = ["/var/lib/jenkins/workspace/checkbox.io/server-side/"];
-		args = ["/Users/PranavKulkarni/Documents/DevOps/checkbox.io/server-side/"];
+		args = ["/var/lib/jenkins/workspace/checkbox.io/server-side/"];
+		//args = ["/Users/PranavKulkarni/Documents/DevOps/checkbox.io/server-side/"];
 		//args = ["analysis.js"];
 	}
 

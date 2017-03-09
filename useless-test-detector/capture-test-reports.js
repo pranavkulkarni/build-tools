@@ -8,8 +8,8 @@ var args = process.argv.slice(2);
 
 if( args.length == 0 )
 {
-        //args = ["/var/lib/jenkins/workspace/iTrust-v23-secondary/iTrust/target/surefire-reports"];
-        args = ["/Users/vivekanr/workspace/iTrust-v23/iTrust/target/surefire-reports/"];
+        args = ["/var/lib/jenkins/workspace/iTrust-v23-testcases/iTrust/target/surefire-reports"];
+        //args = ["/Users/vivekanr/workspace/iTrust-v23/iTrust/target/surefire-reports/"];
 }
    
 var projectPath = args[0];
@@ -19,7 +19,7 @@ var dirs = projectPath.split("/");
 var jobName;
 for(var i = 0 ; i < dirs.length; i++)
 {
-    if(dirs[i] === 'workspace'){
+    if(dirs[i] === 'workspace') {
         jobName = dirs[i+1];
         break;
     }
@@ -28,8 +28,8 @@ for(var i = 0 ; i < dirs.length; i++)
 var failedTC =0;
 var passedTC =0;
 
-//var nextBuildNumberFile = '/var/lib/jenkins/jobs/' + jobName + '/nextBuildNumber';
-var nextBuildNumberFile = '/Users/vivekanr/workspace/' + jobName + '/iTrust/target/nextBuildNumber';
+var nextBuildNumberFile = '/var/lib/jenkins/jobs/' + jobName + '/nextBuildNumber';
+//var nextBuildNumberFile = '/Users/vivekanr/workspace/' + jobName + '/iTrust/target/nextBuildNumber';
 //console.log(nextBuildNumberFile);
 
 var nextBuildNumber = fs.readFileSync(nextBuildNumberFile, "utf8").toString().trim();
