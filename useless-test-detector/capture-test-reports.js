@@ -32,7 +32,8 @@ var nextBuildNumberFile = '/var/lib/jenkins/jobs/' + jobName + '/nextBuildNumber
 //var nextBuildNumberFile = '/Users/vivekanr/workspace/' + jobName + '/iTrust/target/nextBuildNumber';
 //console.log(nextBuildNumberFile);
 
-var nextBuildNumber = fs.readFileSync(nextBuildNumberFile, "utf8").toString().trim();
+var nextBuildNumber = parseInt(fs.readFileSync(nextBuildNumberFile, "utf8").toString().trim()) - 1;
+
 var buildDir = reportsPath + nextBuildNumber + "/";
 
 // Create reports/builds directory    
