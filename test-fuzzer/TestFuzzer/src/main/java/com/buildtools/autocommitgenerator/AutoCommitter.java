@@ -65,8 +65,8 @@ public class AutoCommitter {
             BUILD_NO++;
         }
         
-        git.checkout().setName(MASTER_BRANCH_NAME).call();
-        git.branchDelete().setForce(true).setBranchNames(TESTCASES_BRANCH_NAME).call();
+        //git.checkout().setName(MASTER_BRANCH_NAME).call();
+        //git.branchDelete().setForce(true).setBranchNames(TESTCASES_BRANCH_NAME).call();
 
         git.close();
         
