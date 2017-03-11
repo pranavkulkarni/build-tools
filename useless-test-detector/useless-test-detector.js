@@ -26,7 +26,7 @@ function report(){
 		allTests++;
 	}
 
-	console.log('\n\nFlaky Testcases : ' + testsPassed + '\t Total Testcases : ' + allTests +'\n');
+	console.log('\n\nUseless Testcases : ' + testsPassed + '\t Total Testcases : ' + allTests +'\n');
 	console.log('Build-Tools | Useless Test Detector : COMPLETED\n');
 	
 }
@@ -80,7 +80,7 @@ function collectStats(testReport) {
 
 }
 console.log('\nBuild-Tools | Useless Test Detector : STARTED');
-console.log("Identifying Flaky Tests in Test Suite\n");
+console.log("Identifying Useless Tests in Test Suite\n");
 var calls = [];
 recursive(reportsPath, function (err, allFiles) {
 	for(var id in allFiles) {

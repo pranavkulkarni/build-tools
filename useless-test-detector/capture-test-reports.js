@@ -9,7 +9,7 @@ var args = process.argv.slice(2);
 if( args.length == 0 )
 {
         args = ["/var/lib/jenkins/workspace/iTrust-v23-testcases/iTrust/target/surefire-reports"];
-        //args = ["/Users/vivekanr/workspace/iTrust-v23/iTrust/target/surefire-reports/"];
+        //args = ["/Users/PranavKulkarni/Downloads/synced/surefire-reports/"];
 }
    
 var projectPath = args[0];
@@ -25,11 +25,11 @@ for(var i = 0 ; i < dirs.length; i++)
     }
 }
 
-var failedTC =0;
-var passedTC =0;
+var passedTC= 0;
+var failedTC=0;
 
 var nextBuildNumberFile = '/var/lib/jenkins/jobs/' + jobName + '/nextBuildNumber';
-//var nextBuildNumberFile = '/Users/vivekanr/workspace/' + jobName + '/iTrust/target/nextBuildNumber';
+//var nextBuildNumberFile = '/Users/PranavKulkarni/Downloads/synced/nextBuildNumber';
 //console.log(nextBuildNumberFile);
 
 var nextBuildNumber = parseInt(fs.readFileSync(nextBuildNumberFile, "utf8").toString().trim()) - 1;
@@ -49,7 +49,7 @@ if (!fs.existsSync(buildDir)){
 
 function report(failedTestsCount, successfulTestsCount){
     var allTestCases = failedTestsCount + successfulTestsCount;
-    console.log('Passed Testcases : ' + successfulTestsCount + '\t Failed Testcases : ' + failedTestsCount + '\t Total Testcases : ' + allTestCases +'\n');
+    console.log('Passed Testcases : ' + successfulTestsCount + '\t Failed/Error Testcases : ' + failedTestsCount + '\t Total Testcases : ' + allTestCases +'\n');
     console.log('Build-Tools | Useless Test Detector : COMPLETED\n');
 }
 
@@ -62,58 +62,63 @@ function processFile(testReport, callback) {
 function collectStats(testReport) {
 
     fs.readFile(testReport, function(err, data) {
+
+        var failedTests = {};
+        var successfulTests = {};
+
         parser.parseString(data, function (err, result) {
             var allTestCases = result.testsuite.testcase;
-            var failedTests = [];
-            var successfulTests = [];
+            var failedTests = {};
+            var successfulTests = {};
             
             for(var i = 0; i < allTestCases.length; i++) {
-                if(allTestCases[i].failure) {
-                    failedTests.push(allTestCases[i]);
-                    failedTC += 1;
-                } else {
-                    successfulTests.push(allTestCases[i]);
-                    passedTC += 1;
+                if(allTestCases[i].$.classname.indexOf("edu.ncsu") == -1) {
+                    //console.log("Ignoring..." + allTestCases[i].$.classname);
+                    continue;
+                }
+
+                var key = allTestCases[i].$.classname + ", " + allTestCases[i].$.name + "\n";
+                if(allTestCases[i].failure || allTestCases[i].error ) {
+                    if(!failedTests.hasOwnProperty(key)) {
+                        failedTests[key] = "";
+                        failedTC++;
+                    }
+                } 
+                else {
+                    if(!successfulTests.hasOwnProperty(key)) {
+                        successfulTests[key] = "";
+                        passedTC++;
+                    }
                 }
             }
 
             //console.log("-------------------- " + allTestCases[0].$.classname + " -------------------- ");
             
             //console.log("#################### FAILED TESTS #########################\n");
-            for (var i = 0; i < failedTests.length; i++) {
-                //console.log(failedTests[i].$.classname + ", " + failedTests[i].$.name + " Failed: TRUE" );
-
+            for (var failedTest in failedTests) {
                 var failedFileName = buildDir + 'failed.txt';
-                var text = failedTests[i].$.classname + ", " + failedTests[i].$.name + "\n";
-
-                fs.appendFile(failedFileName, text, function (err) {
+                fs.appendFile(failedFileName, failedTest, function (err) {
                    if (err) {
                       return console.error(err);
                    }
                 });
-
             }
 
             //console.log("#################### SUCCESSFUL TESTS #########################\n");
-            for (var i = 0; i < successfulTests.length; i++) {
-                //console.log(successfulTests[i].$.classname + ", " + successfulTests[i].$.name + " Failed: FALSE" );
-
-
-                var successFileName = buildDir + 'success.txt';
-                var text = successfulTests[i].$.classname + ", " + successfulTests[i].$.name + "\n";
-
-                fs.appendFile(successFileName, text, function (err) {
+            for (var successfulTest in successfulTests) {
+                var successfulFileName = buildDir + 'success.txt';
+                fs.appendFile(successfulFileName, successfulTest, function (err) {
                    if (err) {
                       return console.error(err);
                    }
                 });
             }
-            
+        
         });
         
         calls.pop();
         if(calls.length === 0) {
-            report(failedTC,passedTC);
+            report(failedTC, passedTC);
         }
 
     });
