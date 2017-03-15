@@ -19,7 +19,7 @@ public class AutoCommitter {
 	private static int BUILD_NO = 1; // also known as iteration no. 
 	private static int JOB_POLL_TIME = 15000;
 	private final static String REPORTS_PATH = "/var/lib/jenkins/build-tools/useless-test-detector/reports/builds/";
-	private final static int MAX_BUILDS = 3;
+	private final static int MAX_BUILDS = 100;
 	private final static String MASTER_BRANCH_NAME = "master";
 	private final static String TESTCASES_BRANCH_NAME = "testcases";
 	
